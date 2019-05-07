@@ -1,4 +1,42 @@
+import math
+from tensorflow.python.framework import dtypes
+from tensorflow.python.ops import random_ops
 import tensorflow as tf
+
+def kaiming_initializer(seed=None, dtype=dtypes.float32):
+  if not dtype.is_floating:
+    raise TypeError('Cannot create initializer for non-floating point type.')
+
+  def _initializer(shape, dtype=dtype, partition_info=None):
+    """Initializer function."""
+    if not dtype.is_floating:
+      raise TypeError('Cannot create initializer for non-floating point type.')
+    
+    if shape:
+      fan_in = float(shape[-2]) if len(shape) > 1 else float(shape[-1])      
+    else:
+      fan_in = 1.0
+      
+    for dim in shape[:-2]:
+      fan_in *= float(dim)
+          
+    n = fan_in
+    limit = math.sqrt(3.0) * (math.sqrt(2.0 / 6.0) / math.sqrt(n))    
+    
+    return random_ops.random_uniform(shape, -limit, limit, dtype, seed=seed)
+  
+  return _initializer
+
+
+def bias_initializer(n, seed=None, dtype=dtypes.float32):
+  if not dtype.is_floating:
+    raise TypeError('Cannot create initializer for non-floating point type.')
+
+  def _initializer(shape, dtype=dtype, partition_info=None):    
+    limit = 1 / math.sqrt(n)
+    return random_ops.random_uniform(shape, -limit, limit, dtype, seed=seed)
+  
+  return _initializer
 
 class WaveRNN(object):
     def __init__(self, hidden_size=896, use_softsign=False):
@@ -10,15 +48,15 @@ class WaveRNN(object):
         self.quantisation_levels = 2**8
 
         with tf.variable_scope('WaveRNN'):
-            self.R = tf.layers.Dense(3 * self.hidden_size, use_bias=False, name="R")
+            self.R = tf.layers.Dense(3 * self.hidden_size, use_bias=False, name="R", kernel_initializer=kaiming_initializer())
 
-            self.O1 = tf.layers.Dense(self.split_size, name="O1", kernel_initializer=tf.initializers.he_uniform())
-            self.O2 = tf.layers.Dense(self.quantisation_levels, name="O2", kernel_initializer=tf.initializers.lecun_uniform())
-            self.O3 = tf.layers.Dense(self.split_size, name="O3", kernel_initializer=tf.initializers.he_uniform())
-            self.O4 = tf.layers.Dense(self.quantisation_levels, name="O4", kernel_initializer=tf.initializers.lecun_uniform())
+            self.O1 = tf.layers.Dense(self.split_size, name="O1", kernel_initializer=kaiming_initializer(), bias_initializer=bias_initializer(self.split_size))
+            self.O2 = tf.layers.Dense(self.quantisation_levels, name="O2", kernel_initializer=kaiming_initializer(), bias_initializer=bias_initializer(self.split_size))
+            self.O3 = tf.layers.Dense(self.split_size, name="O3", kernel_initializer=kaiming_initializer(), bias_initializer=bias_initializer(self.split_size))
+            self.O4 = tf.layers.Dense(self.quantisation_levels, name="O4", kernel_initializer=kaiming_initializer(), bias_initializer=bias_initializer(self.split_size))
 
-            self.I_coarse = tf.layers.Dense(3 * self.split_size, use_bias=False, name="I_coarse", kernel_initializer=tf.initializers.he_uniform())
-            self.I_fine = tf.layers.Dense(3 * self.split_size, use_bias=False, name="I_fine", kernel_initializer=tf.initializers.he_uniform())
+            self.I_coarse = tf.layers.Dense(3 * self.split_size, use_bias=False, name="I_coarse", kernel_initializer=kaiming_initializer())
+            self.I_fine = tf.layers.Dense(3 * self.split_size, use_bias=False, name="I_fine", kernel_initializer=kaiming_initializer())
 
             self.bias_u = tf.get_variable('bias_u', (self.hidden_size), initializer=tf.zeros_initializer())
             self.bias_r = tf.get_variable('bias_r', (self.hidden_size), initializer=tf.zeros_initializer())
