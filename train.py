@@ -79,7 +79,7 @@ def body(i, out_ta_coarse, out_ta_fine, hidden_state):
 
     return [i + 1, out_ta_coarse, out_ta_fine, next_hidden_state]
 
-i0, out_ta_coarse, out_ta_fine, next_hidden_state = tf.while_loop(lambda i, out_ta_coarse, out_ta_fine, hidden_state: i < tbptt_size, body, loop_vars=[i0, out_ta_coarse, out_ta_fine, hidden_state], swap_memory=True, return_same_structure=True)
+i0, out_ta_coarse, out_ta_fine, next_hidden_state = tf.while_loop(lambda i, out_ta_coarse, out_ta_fine, hidden_state: i < tbptt_size, body, loop_vars=[i0, out_ta_coarse, out_ta_fine, hidden_state], swap_memory=True)
 
 #
 out_coarse = out_ta_coarse.stack()

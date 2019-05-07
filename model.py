@@ -27,7 +27,6 @@ def kaiming_initializer(seed=None, dtype=dtypes.float32):
   
   return _initializer
 
-
 def bias_initializer(n, seed=None, dtype=dtypes.float32):
   if not dtype.is_floating:
     raise TypeError('Cannot create initializer for non-floating point type.')
